@@ -41,4 +41,15 @@ impl Piece {
             (PieceType::King, Color::Black) => '♚',
         }
     }
+
+    pub fn point_value(&self) -> u32 {
+        match self.piece_type {
+            PieceType::Pawn => 1,
+            PieceType::Knight => 3,
+            PieceType::Bishop => 3,
+            PieceType::Rook => 5,
+            PieceType::Queen => 9,
+            PieceType::King => 0,
+        }
+    }
 }

@@ -7,7 +7,7 @@ fn main() -> eframe::Result<()> {
     let options = eframe::NativeOptions::default();
 
     eframe::run_native(
-        "rust chess",
+        "chess",
         options,
         Box::new(|_| Box::new(gui::ChessApp::default())),
     )

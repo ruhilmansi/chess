@@ -4,6 +4,7 @@ use crate::{game::Game, pieces::Color};
 pub struct ChessApp {
     pub game: Game,
     selected: Option<(usize, usize)>,
+    valid_moves: Vec<(usize, usize)>,
 }
 
 impl Default for ChessApp {
@@ -11,6 +12,7 @@ impl Default for ChessApp {
         Self {
             game: Game::new(),
             selected: None,
+            valid_moves: vec![],
         }
     }
 }
@@ -33,14 +35,21 @@ impl eframe::App for ChessApp {
                 for r in (0..8).rev() {
                     for c in 0..8 {
                         let dark = (r + c) % 2 == 1;
-                        let color = if dark {
-                            egui::Color32::from_rgb(118,150,86)
+                        let is_selected = self.selected == Some((r, c));
+                        let is_valid_move = self.valid_moves.contains(&(r, c));
+
+                        let color = if is_selected {
+                            egui::Color32::from_rgb(200, 150, 100)
+                        } else if is_valid_move {
+                            egui::Color32::from_rgb(150, 200, 100)
+                        } else if dark {
+                            egui::Color32::from_rgb(118, 150, 86)
                         } else {
-                            egui::Color32::from_rgb(238,238,210)
+                            egui::Color32::from_rgb(238, 238, 210)
                         };
 
                         let mut text = "".to_string();
-                        if let Some(p) = self.game.board.get(r,c) {
+                        if let Some(p) = self.game.board.get(r, c) {
                             text = p.to_char().to_string();
                         }
 
@@ -50,15 +59,19 @@ impl eframe::App for ChessApp {
                                 .color(egui::Color32::BLACK)
                         )
                         .fill(color)
-                        .min_size(egui::vec2(60.0,60.0));
+                        .min_size(egui::vec2(60.0, 60.0));
 
                         if ui.add(btn).clicked() {
                             if let Some(from) = self.selected {
-                                self.game.board.move_piece(from,(r,c));
-                                self.game.switch_turn();
+                                if self.game.board.is_valid_move(from, (r, c), self.game.turn) {
+                                    self.game.board.move_piece(from, (r, c));
+                                    self.game.switch_turn();
+                                }
                                 self.selected = None;
+                                self.valid_moves.clear();
                             } else {
-                                self.selected = Some((r,c));
+                                self.selected = Some((r, c));
+                                self.valid_moves = self.get_valid_moves((r, c));
                             }
                         }
                     }
@@ -71,14 +84,23 @@ impl eframe::App for ChessApp {
             ui.horizontal(|ui| {
                 if ui.button("new game").clicked() {
                     self.game = Game::new();
+                    self.selected = None;
+                    self.valid_moves.clear();
                 }
 
                 if ui.button("reset").clicked() {
                     self.game = Game::new();
+                    self.selected = None;
+                    self.valid_moves.clear();
                 }
             });
 
             ui.separator();
+
+            ui.horizontal(|ui| {
+                ui.label(format!("White Points: {}", self.game.board.get_white_points()));
+                ui.label(format!("Black Points: {}", self.game.board.get_black_points()));
+            });
 
             ui.label("White captured:");
             ui.horizontal(|ui| {
@@ -94,5 +116,19 @@ impl eframe::App for ChessApp {
                 }
             });
         });
+    }
+}
+
+impl ChessApp {
+    fn get_valid_moves(&self, pos: (usize, usize)) -> Vec<(usize, usize)> {
+        let mut moves = vec![];
+        for r in 0..8 {
+            for c in 0..8 {
+                if self.game.board.is_valid_move(pos, (r, c), self.game.turn) {
+                    moves.push((r, c));
+                }
+            }
+        }
+        moves
     }
 }
